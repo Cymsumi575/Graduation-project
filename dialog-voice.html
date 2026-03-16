@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>铭亦AI聊天</title>
+    <link rel="icon" href="common/favicon.ico" type="image/x-icon">
+    <link href="css/material-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1229 100%);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 50%, rgba(0, 255, 255, 0.05) 0%, rgba(168, 85, 247, 0.03) 50%, transparent 70%);
+            animation: aurora 9s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes aurora {
+            0%, 100% { opacity: 0.4; transform: translateX(0) translateY(0) scale(1); }
+            25% { opacity: 0.6; transform: translateX(30px) translateY(-20px) scale(1.15); }
+            50% { opacity: 0.5; transform: translateX(-20px) translateY(25px) scale(0.9); }
+            75% { opacity: 0.7; transform: translateX(-30px) translateY(-10px) scale(1.1); }
+        }
+
+        .top-area {
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .chat-container {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 5;
+            position: relative;
+        }
+
+        .chat-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-end;
+            max-width: 85%;
+            animation: messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .message-content {
+            padding: 14px 20px;
+            border-radius: 20px;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+            color: #ffffff;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .message.ai .message-content {
+            background: rgba(10, 14, 39, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            color: #b8c5d6;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-content:hover {
+            transform: translateY(-3px);
+        }
+
+        .message.user .message-content:hover {
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .message.ai .message-content:hover {
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.3);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: transparent;
+            z-index: 10;
+        }
+
+        .input-container.hidden {
+            display: none;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            background: rgba(10, 14, 39, 0.85);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 8px 16px;
+            height: 60px;
+            box-sizing: border-box;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-area:focus-within {
+            border-color: rgba(0, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.15);
+        }
+
+        .input-area input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            padding: 10px;
+            background: none;
+            color: #ffffff;
+            font-weight: 300;
+        }
+
+        .input-area input::placeholder {
+            color: rgba(0, 255, 255, 0.4);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .input-area button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #00ffff;
+            cursor: pointer;
+            margin: 0 5px;
+            width: 44px;
+            height: 44px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+        }
+
+        .input-area button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .input-area button .material-icons {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .voice-input-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 14, 39, 0.85);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 10px;
+            height: 60px;
+            box-sizing: border-box;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .voice-input-area:hover {
+            border-color: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+        }
+
+        .voice-input-area span {
+            font-size: 16px;
+            color: #00ffff;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 20px 30px;
+            background: linear-gradient(to top, rgba(10, 14, 39, 0.95), transparent);
+            z-index: 100;
+            gap: 12px;
+        }
+
+        .status-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            order: 1;
+        }
+
+        .voice-waves {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            order: 1;
+        }
+
+        .voice-wave {
+            width: 4px;
+            height: 10px;
+            background: linear-gradient(180deg, #00ffff, #a855f7);
+            border-radius: 3px;
+            animation: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.3;
+        }
+
+        .voice-wave.active {
+            animation: wave 0.5s ease-in-out infinite;
+            opacity: 1;
+        }
+
+        .voice-wave:nth-child(1).active { animation-delay: 0s; }
+        .voice-wave:nth-child(2).active { animation-delay: 0.06s; }
+        .voice-wave:nth-child(3).active { animation-delay: 0.12s; }
+        .voice-wave:nth-child(4).active { animation-delay: 0.18s; }
+        .voice-wave:nth-child(5).active { animation-delay: 0.24s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 32px; }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #b8c5d6;
+            font-weight: 300;
+            letter-spacing: 1px;
+            order: 2;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            order: 2;
+        }
+
+        .mute-button, .close-button, .interrupt-button {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(20px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .mute-button:hover, .close-button:hover, .interrupt-button:hover {
+            background: rgba(0, 255, 255, 0.15);
+            border-color: rgba(0, 255, 255, 0.5);
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .mute-button:active, .close-button:active, .interrupt-button:active {
+            transform: scale(0.95);
+        }
+
+        .mute-button .material-icons, .close-button .material-icons, .interrupt-button .material-icons {
+            font-size: 32px;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .close-button .material-icons {
+            color: #a855f7;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+
+        .close-button:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.3);
+        }
+
+        .mute-button.active {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 0 60px rgba(0, 255, 255, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 0 60px rgba(0, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.6), 0 0 80px rgba(0, 255, 255, 0.3); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ffff, #a855f7);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #00ffff, #a855f7);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="top-area"></div>
+
+    <div class="chat-container" id="chat-container">
+    </div>
+
+    <div class="input-container hidden" id="input-container">
+        <div class="input-area" id="input-area">
+            <button class="input-toggle" id="toggle-button">
+                <i class="material-icons">keyboard</i>
+            </button>
+            <div class="voice-input-area" id="voice-input-area">
+                <span>点击开始聊天</span>
+            </div>
+            <input type="text" id="text-input" placeholder="发送消息" style="display: none;">
+            <button class="send-button" id="send-button" style="display: none;">
+                <i class="material-icons">send</i>
+            </button>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="status-area">
+            <div class="voice-waves" id="voice-waves">
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+            </div>
+            <div class="status-text" id="status-text">点击开始聊天</div>
+        </div>
+        
+        <div class="button-row">
+            <button class="mute-button" id="mute-button" title="静音">
+                <i class="material-icons">mic</i>
+            </button>
+            
+            <button class="interrupt-button" id="interrupt-button" title="打断">
+                <i class="material-icons">pause</i>
+            </button>
+            
+            <button class="close-button" id="close-button" title="关闭对话">
+                <i class="material-icons">close</i>
+            </button>
+        </div>
+    </div>
+    <script src="js/cosyvoiceApi.js"></script>
+    <script src="js/audioPlayer.js"></script>
+    <script src="js/audioRecorder.js"></script>
+    <script src="js/dialogVoice.js"></script>
+</body>
+</html>

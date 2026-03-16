@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, user-scalable=0" />
+    <link rel="icon" href="common/favicon.ico" type="image/x-icon">
+    <title>MYChat</title>
+    <link href="css/material-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1229 100%);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 50%, rgba(0, 255, 255, 0.03) 0%, transparent 50%);
+            animation: aurora 10s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes aurora {
+            0%, 100% { opacity: 0.3; transform: translateX(0) translateY(0) scale(1); }
+            25% { opacity: 0.5; transform: translateX(20px) translateY(-10px) scale(1.1); }
+            50% { opacity: 0.4; transform: translateX(-10px) translateY(15px) scale(0.95); }
+            75% { opacity: 0.6; transform: translateX(-20px) translateY(-5px) scale(1.05); }
+        }
+
+        .title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 20px;
+            background: rgba(10, 14, 39, 0.6);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            z-index: 100;
+            position: relative;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .title-text {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            background: linear-gradient(90deg, #00ffff, #a855f7, #00ffff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 4s linear infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            position: relative;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .title-text::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, #a855f7, transparent);
+            background-size: 200% 100%;
+            animation: laserFlow 3s linear infinite;
+        }
+
+        @keyframes laserFlow {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .settings-button {
+            position: absolute;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 101;
+        }
+
+        .settings-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .settings-button .material-icons {
+            color: #00ffff;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            width: 320px;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 200;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 255, 255, 0.1);
+            animation: panelSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        @keyframes panelSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .settings-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+        }
+
+        .settings-title {
+            font-size: 16px;
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .settings-item {
+            margin-bottom: 15px;
+        }
+
+        .settings-item label {
+            display: block;
+            color: #a855f7;
+            font-size: 12px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        #api-key {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        #api-key:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        #api-key::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+
+        select option {
+            background: #0a0e27;
+            color: #fff;
+        }
+
+        .main-container {
+            background-color: transparent;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        #background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #background-video,
+        #background-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+            opacity: 0.6;
+            filter: brightness(0.7) contrast(1.1);
+        }
+
+        #foreground-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #canvas_video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #canvas_gl {
+            position: absolute;
+            top: 100px;
+            left: 100px;
+            width: 180px;
+            height: 180px;
+            opacity: 0.001;
+        }
+
+        #screen {
+            position: absolute;
+            bottom: -1000;
+            right: -1000;
+            width: 1px;
+            height: 1px;
+        }
+
+        #screen2 {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: none;
+            z-index: 5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ffff, #a855f7);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #00ffff, #a855f7);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="title-bar">
+        <div class="title-text">铭亦AI聊天</div>
+        <button class="settings-button" id="settings-button">
+            <i class="material-icons">settings</i>
+        </button>
+        
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-title">系统设置</div>
+            <div class="settings-item">
+                <label>API密钥</label>
+                <input type="text" id="api-key" placeholder="输入您的阿里百炼API密钥">
+            </div>
+            <div class="settings-item">
+                <label>语音选择</label>
+                <select id="voice-select">
+                    <option value="longanrou">温柔闺蜜女</option>
+                    <option value="longqiang_v2">浪漫风情女</option>
+                    <option value="longhan_v2">温暖痴情男</option>
+                    <option value="longxing_v2">温婉邻家女</option>
+                    <option value="longfeifei_v2">甜美娇气女</option>
+                    <option value="longxiaocheng_v2">磁性低音男</option>
+                    <option value="longzhe_v2">呆板大暖男</option>
+                    <option value="longyan_v2">温暖春风女</option>
+                    <option value="longtian_v2">磁性理智男</option>
+                    <option value="longze_v2">温暖元气男</option>
+                    <option value="longshao_v2">积极向上男</option>
+                    <option value="longhao_v2">多情忧郁男</option>
+                    <option value="kabuleshen_v2">实力歌手男</option>
+                    <option value="longjielidou_v2">阳光顽皮男</option>
+                    <option value="longling_v2">稚气呆板女</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div id="background-container">
+            <img id="background-image" src="imgs/bg1.jpg" alt="背景图片">
+        </div>
+
+        <div id="foreground-container">
+            <canvas id="canvas_video"></canvas>
+        </div>
+    </div>
+
+    <canvas id="canvas_gl" width="180" height="180"></canvas>
+    <div id="screen"></div>
+    <iframe id="screen2" src="dialog-voice.html" frameborder="0"></iframe>
+    <script src="js/pako.min.js"></script>
+    <script src="js/DHLiveMini2.js"></script>
+    <script src="js/MiniLive.js"></script>
+    <script src="js/MiniMateLoader_public.js"></script>
+    <script>
+        const settingsButton = document.getElementById('settings-button');
+        const settingsPanel = document.getElementById('settings-panel');
+
+        settingsButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            settingsPanel.classList.toggle('active');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!settingsPanel.contains(e.target) && !settingsButton.contains(e.target)) {
+                settingsPanel.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
